@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Streamlit
+.streamlit/
+
+# Training outputs
+runs/
+runs_cls/
+dataset_cls/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local helper files
+.install_pid
+.install_start

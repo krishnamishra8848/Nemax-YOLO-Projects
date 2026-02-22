@@ -1,0 +1,6 @@
+streamlit
+ultralytics
+pillow
+streamlit-webrtc
+av
+pyttsx3
