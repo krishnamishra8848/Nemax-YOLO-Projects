@@ -11,6 +11,10 @@ venv/
 runs/
 runs_cls/
 dataset_cls/
+!runs_cls/
+!runs_cls/employee_cls_10ep/
+!runs_cls/employee_cls_10ep/weights/
+!runs_cls/employee_cls_10ep/weights/best.pt
 
 # OS
 .DS_Store
