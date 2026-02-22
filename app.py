@@ -1,4 +1,3 @@
-import cv2
 import av
 import time
 import threading
@@ -7,7 +6,11 @@ import streamlit as st
 from PIL import Image
 from ultralytics import YOLO
 from streamlit_webrtc import WebRtcMode, webrtc_streamer
-import pyttsx3
+
+try:
+    import pyttsx3
+except Exception:
+    pyttsx3 = None
 
 ROOT = Path(__file__).resolve().parent
 MODEL_PATH = ROOT / "runs_cls" / "employee_cls_10ep" / "weights" / "best.pt"
@@ -28,8 +31,13 @@ try:
 except Exception as e:
     st.error(str(e))
     st.stop()
-tts_engine = pyttsx3.init()
 tts_lock = threading.Lock()
+tts_engine = None
+if pyttsx3 is not None:
+    try:
+        tts_engine = pyttsx3.init()
+    except Exception:
+        tts_engine = None
 if "last_spoken_label" not in st.session_state:
     st.session_state.last_spoken_label = ""
 if "last_spoken_time" not in st.session_state:
@@ -37,6 +45,10 @@ if "last_spoken_time" not in st.session_state:
 
 st.subheader("Realtime Webcam")
 st.write("Click 'START' below to allow camera and run live prediction.")
+if tts_engine is None:
+    st.info("Voice output unavailable in this environment. Prediction will still run.")
+min_conf = st.slider("Voice confidence threshold", 0.0, 1.0, 0.40, 0.05)
+cooldown_sec = st.slider("Voice cooldown (sec)", 0.0, 5.0, 0.5, 0.1)
 
 
 def video_frame_callback(frame):
@@ -50,15 +62,16 @@ def video_frame_callback(frame):
 
         now = time.time()
         should_speak = (
-            top1_conf >= 0.70
-            and label != st.session_state.last_spoken_label
-            and (now - st.session_state.last_spoken_time) > 2.0
+            top1_conf >= min_conf
+            and (now - st.session_state.last_spoken_time) > cooldown_sec
         )
         if should_speak:
             st.session_state.last_spoken_label = label
             st.session_state.last_spoken_time = now
 
             def speak_prediction(text):
+                if tts_engine is None:
+                    return
                 with tts_lock:
                     tts_engine.say(text)
                     tts_engine.runAndWait()
@@ -91,8 +104,9 @@ if uploaded is not None:
         top1_conf = float(probs.top1conf)
         top1_label = result.names[top1_idx]
 
-        st.success("Prediction voice played.")
+        st.success(f"Prediction: {top1_label}")
         st.write(f"Confidence: {top1_conf:.2%}")
-        with tts_lock:
-            tts_engine.say(top1_label)
-            tts_engine.runAndWait()
+        if tts_engine is not None:
+            with tts_lock:
+                tts_engine.say(top1_label)
+                tts_engine.runAndWait()

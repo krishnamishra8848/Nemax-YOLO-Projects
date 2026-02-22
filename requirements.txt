@@ -4,3 +4,4 @@ pillow
 streamlit-webrtc
 av
 pyttsx3
+opencv-python-headless
